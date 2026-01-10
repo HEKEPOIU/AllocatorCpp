@@ -8,10 +8,10 @@ Allocator create_arena_allocator(Arena *arena) {
   };
 };
 
-Arena init_arena(u8 *data, size_t size) {
+Arena init_arena(Slice<u8> mem) {
   return {
-      .buf = data,
-      .buf_len = size,
+      .buf = mem.begin(),
+      .buf_len = mem.len(),
   };
 };
 
@@ -27,7 +27,7 @@ void restore_snapshot(Arena_Snapshot& snapshot) {
 	snapshot.arena.prev_offset = snapshot.prev_offset;
 };
 
-void *arena_alloc(Arena *arena, size_t size, size_t alignment,
+Slice<u8> arena_alloc(Arena *arena, size_t size, size_t alignment,
                   Source_Location loc, b32 zero_mem = true) {
   auto curr_ptr = reinterpret_cast<uintptr_t>(arena->buf) +
                   reinterpret_cast<uintptr_t>(arena->curr_offset);
@@ -37,7 +37,7 @@ void *arena_alloc(Arena *arena, size_t size, size_t alignment,
   // Out of arena.
   if (offset + size > arena->buf_len) {
     assert(false, "Allocation error arena out of memory");
-    return nullptr;
+    return Slice<u8>{};
   }
   auto ptr = &arena->buf[offset];
   arena->prev_offset = offset;
@@ -45,10 +45,10 @@ void *arena_alloc(Arena *arena, size_t size, size_t alignment,
 
   if (zero_mem)
     memset(ptr, 0, size);
-  return ptr;
+  return byte_slice(ptr, size);
 }
 
-void *arena_resize(Arena *arena, size_t size, size_t old_size, void *old_memory,
+Slice<u8> arena_resize(Arena *arena, size_t size, size_t old_size, void *old_memory,
                    size_t alignment, Source_Location location,
                    bool zero_mem = true) {
   auto old_mem = reinterpret_cast<u8 *>(old_memory);
@@ -60,32 +60,32 @@ void *arena_resize(Arena *arena, size_t size, size_t old_size, void *old_memory,
       arena->curr_offset = arena->prev_offset + size;
       if (arena->curr_offset > arena->buf_len) {
         assert(false, "Resize error arena out of memory");
-        return nullptr;
+        return Slice<u8>{};
       }
       if (old_size < size) {
         if (zero_mem)
           memset(&arena->buf[arena->prev_offset + old_size], 0,
                  size - old_size);
       }
-      return old_memory;
+      return byte_slice( old_memory, size);
     } else {
-      void *new_memory =
+      auto new_memory =
           arena_alloc(arena, size, alignment, location, zero_mem);
       if (!new_memory)
-        return nullptr;
-      size_t copy_size = old_size > size ? size : old_size;
-      memmove(new_memory, old_memory, copy_size);
+          return Slice<u8>{};
+      auto copy_size = old_size > size ? size : old_size;
+      memmove(new_memory.begin(), old_memory, copy_size);
       return new_memory;
     }
   } else {
     assert(false, "Old Memory not belong to this arena!");
-    return nullptr;
+    return Slice<u8>{};
   }
 
-  return nullptr;
+  return Slice<u8>{};
 }
 
-void *arena_allocator_func(void *allocator_data, Allocator_Mode mode,
+Slice<u8> arena_allocator_func(void *allocator_data, Allocator_Mode mode,
                            size_t size, void *old_memory, size_t old_size,
                            Source_Location location,
                            size_t alignment = DEFAULT_ALIGNMENT) {
@@ -95,7 +95,7 @@ void *arena_allocator_func(void *allocator_data, Allocator_Mode mode,
     return arena_alloc(arena, size, alignment, location);
   } break;
   case Allocator_Mode::Free: {
-    panic(!"Arena allocator not support free singal memory block");
+    ensure(false, "Arena allocator not support free singal memory block");
   } break;
   case Allocator_Mode::Free_All: {
     arena->curr_offset = 0;
@@ -112,5 +112,5 @@ void *arena_allocator_func(void *allocator_data, Allocator_Mode mode,
                         false);
   } break;
   }
-  return nullptr;
+  return Slice<u8>{};
 };

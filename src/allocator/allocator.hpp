@@ -1,10 +1,9 @@
 #pragma once
 
 #include "Define.hpp"
+#include "base/slice.hpp"
 
 #define DEFAULT_ALIGNMENT (2 * sizeof(void *))
-#define CALLER_LOC                                                             \
-  ::Source_Location { __FILE__, __func__, __LINE__ }
 
 enum class Allocator_Mode : u8 {
   Alloc,
@@ -31,9 +30,9 @@ enum class Allocator_Mode : u8 {
 //            2. use golang like multiple return value -> bad for c++ some RAII
 //            3. implement std::except<T, E> for my own version -> Currently
 //            this project are for the allocator pratice so not now.
-using Alloc_Func = void *(*)(void *allocator_data, Allocator_Mode mode,
-                             size_t size, void *old_memory, size_t old_size,
-                             Source_Location location, size_t alignment);
+using Alloc_Func = Slice<u8> (*)(void *allocator_data, Allocator_Mode mode,
+                                 size_t size, void *old_memory, size_t old_size,
+                                 Source_Location location, size_t alignment);
 
 struct Allocator {
   Alloc_Func alloc_func;
@@ -66,13 +65,26 @@ constexpr inline bool is_aligned(uintptr_t ptr, uintptr_t align) {
   return (ptr & (align - 1)) == 0;
 }
 
-#define alloc(allocator, size)                                                 \
+#define alloc_without_type(allocator, size)                                    \
   allocator.alloc_func(allocator.data, Allocator_Mode::Alloc, size, nullptr,   \
                        0, CALLER_LOC, DEFAULT_ALIGNMENT)
+#define alloc_with_type(allocator, size, type)                                 \
+  alloc_without_type(allocator, size * sizeof(type)).as<type>()
 
-#define alloc_none_zero(allocator, size)                                       \
+#define alloc(...)                                                             \
+  SELECTER3(__VA_ARGS__, alloc_with_type, alloc_without_type)(__VA_ARGS__)
+
+#define alloc_none_zero_without_type(allocator, size)                          \
   allocator.alloc_func(allocator.data, Allocator_Mode::Alloc_Non_Zeroed, size, \
                        nullptr, 0, CALLER_LOC, DEFAULT_ALIGNMENT)
+
+#define alloc_none_zero_with_type(allocator, size, type)                       \
+  alloc_none_zero_without_type(allocator, size * sizeof(type)).as<type>()
+
+#define alloc_none_zero(...)                                                   \
+  SELECTER3(__VA_ARGS__, alloc_none_zero_with_type,                            \
+            alloc_none_zero_without_type)                                      \
+  (__VA_ARGS__)
 
 #define free_all(allocator)                                                    \
   allocator.alloc_func(allocator.data, Allocator_Mode::Free_All, 0, nullptr,   \
@@ -82,11 +94,14 @@ constexpr inline bool is_aligned(uintptr_t ptr, uintptr_t align) {
   allocator.alloc_func(allocator.data, Allocator_Mode::Free, 0, ptr, 0,        \
                        CALLER_LOC, DEFAULT_ALIGNMENT)
 
-#define resize(allocator, old_mem, old_size, new_size)                         \
-  allocator.alloc_func(allocator.data, Allocator_Mode::Resize, new_size,       \
-                       old_mem, old_size, CALLER_LOC, DEFAULT_ALIGNMENT)
+#define resize(allocator, old_mem, old_size, new_size, type)                   \
+  allocator                                                                    \
+      .alloc_func(allocator.data, Allocator_Mode::Resize, new_size * sizeof(type), old_mem,   \
+                  old_size * sizeof(type), CALLER_LOC, DEFAULT_ALIGNMENT)                     \
+      .as<type>()
 
-#define resize_none_zero(allocator, old_mem, old_size, new_size)               \
-  allocator.alloc_func(allocator.data, Allocator_Mode::Resize_Non_Zeroed,      \
-                       new_size, old_mem, old_size, CALLER_LOC,                \
-                       DEFAULT_ALIGNMENT)
+#define resize_none_zero(allocator, old_mem, old_size, new_size, type)         \
+  allocator                                                                    \
+      .alloc_func(allocator.data, Allocator_Mode::Resize_Non_Zeroed, new_size * sizeof(type), \
+                  old_mem * sizeof(type), old_size, CALLER_LOC, DEFAULT_ALIGNMENT)            \
+      .as<type>()

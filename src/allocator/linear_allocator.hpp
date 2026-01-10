@@ -20,8 +20,8 @@ void restore_snapshot(Arena_Snapshot& snapshot);
 
 Allocator create_arena_allocator(Arena* arena);
 
-Arena init_arena(u8 *data, size_t size);
+Arena init_arena(Slice<u8>);
 
-void *arena_allocator_func(void *allocator_data, Allocator_Mode mode,
+Slice<u8> arena_allocator_func(void *allocator_data, Allocator_Mode mode,
                            size_t size, void *old_memory, size_t old_size,
                            Source_Location location, size_t alignment);

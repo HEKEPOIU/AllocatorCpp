@@ -20,7 +20,9 @@ using b8 = i8;
 #define MiB(n) ((u64)(n) << 20)
 #define GiB(n) ((u64)(n) << 30)
 
-#define SELECTER(_1, _2, NAME, ...) NAME
+
+#define SELECTER2(_1, _2, NAME, ...) NAME
+#define SELECTER3(_1, _2, _3, NAME, ...) NAME
 
 #if defined(NDEBUG)
 #define assert_with_msg(exp, message)
@@ -43,9 +45,9 @@ using b8 = i8;
 #endif
 
 #define assert(...)                                                            \
-  SELECTER(__VA_ARGS__, assert_with_msg, assert_without_msg)(__VA_ARGS__)
+  SELECTER2(__VA_ARGS__, assert_with_msg, assert_without_msg)(__VA_ARGS__)
 
-#define panic_with_msg(exp, msg)                                               \
+#define ensure_with_msg(exp, msg)                                               \
   do {                                                                         \
     if (!(exp)) {                                                              \
       std::print("{} panic, {}\n", CALLER_LOC, msg);                           \
@@ -53,7 +55,7 @@ using b8 = i8;
     }                                                                          \
   } while (0)
 
-#define panic_without_msg(exp)                                                 \
+#define ensure_without_msg(exp)                                                 \
   do {                                                                         \
     if (!(exp)) {                                                              \
       std::print("{} panic\n", CALLER_LOC);                                    \
@@ -61,8 +63,8 @@ using b8 = i8;
     }                                                                          \
   } while (0)
 
-#define panic(...)                                                             \
-  SELECTER(__VA_ARGS__, panic_with_msg, panic_without_msg)(__VA_ARGS__)
+#define ensure(...)                                                             \
+  SELECTER2(__VA_ARGS__, ensure_with_msg, ensure_without_msg)(__VA_ARGS__)
 
 template <typename T, typename N> auto min(T a, N b) -> decltype(a + b) {
   return (a > b) ? b : a;
@@ -77,6 +79,10 @@ struct Source_Location {
   const char *func;
   u32 line;
 };
+
+
+#define CALLER_LOC                                                             \
+  ::Source_Location { __FILE__, __func__, __LINE__ }
 
 template <> struct std::formatter<Source_Location> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
