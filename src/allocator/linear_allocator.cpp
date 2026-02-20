@@ -36,7 +36,7 @@ Slice<u8> arena_alloc(Arena *arena, size_t size, size_t alignment,
 
   // Out of arena.
   if (offset + size > arena->buf_len) {
-    assert(false, "Allocation error arena out of memory");
+    Hassert(false, "Allocation error arena out of memory");
     return Slice<u8>{};
   }
   auto ptr = &arena->buf[offset];
@@ -59,7 +59,7 @@ Slice<u8> arena_resize(Arena *arena, size_t size, size_t old_size, void *old_mem
         is_aligned(reinterpret_cast<uintptr_t>(old_mem), alignment)) {
       arena->curr_offset = arena->prev_offset + size;
       if (arena->curr_offset > arena->buf_len) {
-        assert(false, "Resize error arena out of memory");
+        Hassert(false, "Resize error arena out of memory");
         return Slice<u8>{};
       }
       if (old_size < size) {
@@ -78,7 +78,7 @@ Slice<u8> arena_resize(Arena *arena, size_t size, size_t old_size, void *old_mem
       return new_memory;
     }
   } else {
-    assert(false, "Old Memory not belong to this arena!");
+    Hassert(false, "Old Memory not belong to this arena!");
     return Slice<u8>{};
   }
 

@@ -45,7 +45,7 @@ constexpr inline bool is_power_of_two(uintptr_t x) {
 
 constexpr inline uintptr_t align_forward(uintptr_t ptr, size_t align) {
   uintptr_t p, a, modulo;
-  assert(is_power_of_two(align));
+  Hassert(is_power_of_two(align));
 
   p = ptr;
   a = static_cast<uintptr_t>(align);
@@ -61,7 +61,7 @@ constexpr inline uintptr_t align_forward(uintptr_t ptr, size_t align) {
 }
 
 constexpr inline bool is_aligned(uintptr_t ptr, uintptr_t align) {
-  assert(is_power_of_two(align));
+  Hassert(is_power_of_two(align));
   return (ptr & (align - 1)) == 0;
 }
 

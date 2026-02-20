@@ -44,7 +44,7 @@ using b8 = i8;
   } while (0)
 #endif
 
-#define assert(...)                                                            \
+#define Hassert(...)                                                            \
   SELECTER2(__VA_ARGS__, assert_with_msg, assert_without_msg)(__VA_ARGS__)
 
 #define ensure_with_msg(exp, msg)                                               \
