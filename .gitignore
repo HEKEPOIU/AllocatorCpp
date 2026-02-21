@@ -2,4 +2,5 @@ build/
 .cache
 /.zed
 lib/*/
+subprojects/*/
 /compile_commands.json
