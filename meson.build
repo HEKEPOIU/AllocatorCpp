@@ -14,16 +14,21 @@ allocator_lib = static_library(
 )
 allocator_dep = declare_dependency(link_with: allocator_lib, include_directories: allocator_include_dir)
 
-test_dep = dependency(
-  'catch2-with-main',
-  default_options: ['tests=false', 'install=false'],
-  static: true,
-)
 
-test_exe = executable(
-  'allocator_cpp_test',
-  'tests/linear_allocator_test.cpp',
-  dependencies: [test_dep, allocator_dep],
-)
 
-test('allocator test', test_exe, args: ['--colour-mode', 'ansi'])
+
+if get_option('tests') 
+  test_dep = dependency(
+    'catch2-with-main',
+    default_options: ['tests=false', 'install=false'],
+    static: true,
+  )
+
+  test_exe = executable(
+    'allocator_cpp_test',
+    'tests/linear_allocator_test.cpp',
+    dependencies: [test_dep, allocator_dep],
+  )
+
+  test('allocator test', test_exe, args: ['--colour-mode', 'ansi'])
+endif
