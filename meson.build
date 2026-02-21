@@ -26,4 +26,4 @@ test_exe = executable(
   dependencies: [test_dep, allocator_dep],
 )
 
-test('allocator test', test_exe)
+test('allocator test', test_exe, args: ['--colour-mode', 'ansi'])
